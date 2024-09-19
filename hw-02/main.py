@@ -1,92 +1,114 @@
-import numpy as np
 import matplotlib.pyplot as plt
-from scipy.stats import norm
+import numpy as np
 
 
-# Функция для генерации выборок из заданного распределения
-def generate_samples(distribution, sample_size, num_samples=10000):
-    if distribution == 'uniform':
-        return np.random.uniform(-1, 1, (num_samples, sample_size))
-    elif distribution == 'normal':
-        return np.random.normal(0, 1, (num_samples, sample_size))
-    elif distribution == 'sum_uniform':
-        return np.random.uniform(-1, 1, (num_samples, sample_size)) + np.random.uniform(-1, 1,
-                                                                                        (num_samples, sample_size))
-    else:
-        raise ValueError("Неизвестное распределение")
+def bootstrap(data, num_bootstrap=500, alpha=0.05):
+    n = len(data)  # Определяем размер выборки
+    means = np.empty(num_bootstrap)  # Создаем массив для хранения средних значений выборок
 
-
-# Функция для вычисления доверительного интервала методом бутстрапа
-def bootstrap_confidence_interval(data, num_bootstrap=1000, alpha=0.05):
-    means = []  # Список для хранения средних значений бутстрапированных выборок
-    n = len(data)
-    for _ in range(num_bootstrap):
-        # Создание бутстрапированной выборки с возвращением
+    # Генерация выборок
+    for i in range(num_bootstrap):
         sample = np.random.choice(data, size=n, replace=True)
-        means.append(np.mean(sample))  # Вычисление среднего значения бутстрапированной выборки
-    lower = np.percentile(means, 100 * alpha / 2)  # Нижняя граница доверительного интервала
-    upper = np.percentile(means, 100 * (1 - alpha / 2))  # Верхняя граница доверительного интервала
-    return lower, upper, means
+        # Вычисляем среднее значение выборки
+        means[i] = np.mean(sample)
+
+    # Вычисляем границы доверительного интервала
+    lower_bound = np.percentile(means, 100 * (alpha / 2))
+    upper_bound = np.percentile(means, 100 * (1 - alpha / 2))
+    return lower_bound, upper_bound
 
 
-# Функция для вычисления доверительного интервала методом джекнайфа
-def jackknife_confidence_interval(data, alpha=0.05):
-    n = len(data)
-    # Вычисление средних значений выборок
-    jackknife_means = np.array([np.mean(np.delete(data, i)) for i in range(n)])
-    jackknife_mean = np.mean(jackknife_means)  # Среднее значение
-    jackknife_var = (n - 1) * np.var(jackknife_means)  # Оценка дисперсии
-    se = np.sqrt(jackknife_var)  # Стандартная ошибка
-    lower = jackknife_mean - norm.ppf(1 - alpha / 2) * se  # Нижняя граница доверительного интервала
-    upper = jackknife_mean + norm.ppf(1 - alpha / 2) * se  # Верхняя граница доверительного интервала
-    return lower, upper, jackknife_means
+def jackknife(data):
+    n = len(data)  # Определяем размер выборки
+    means = np.empty(n)  # Создаем массив для хранения средних значений
+
+    # Генерация выборок
+    for i in range(n):
+        # Удаляем i-й элемент из выборки, формируя выборку
+        jackknife_sample = np.delete(data, i)
+        # Вычисляем среднее значение
+        means[i] = np.mean(jackknife_sample)
+
+    # Вычисляем среднее значение и стандартную ошибку джекнайфа
+    mean_jackknife = np.mean(means)
+    se_jackknife = np.sqrt((n - 1) * np.var(means, ddof=1))
+
+    # Вычисляем границы доверительного интервала на основе нормального распределения
+    lower_bound = mean_jackknife - 1.96 * se_jackknife
+    upper_bound = mean_jackknife + 1.96 * se_jackknife
+    return lower_bound, upper_bound
 
 
-# Функция для построения графиков доверительных интервалов
-def plot_confidence_intervals(sample, distribution_name, size):
-    true_mean = 0  # Истинное среднее значение
-
-    # Вычисление доверительных интервалов методом бутстрапа
-    lower_b, upper_b, bootstrap_means = bootstrap_confidence_interval(sample)
-
-    # Вычисление доверительных интервалов методом джекнайфа
-    lower_j, upper_j, jackknife_means = jackknife_confidence_interval(sample)
-
-    plt.figure(figsize=(14, 6))
-
-    # График для бутстрапа
-    plt.subplot(1, 2, 1)
-    plt.hist(bootstrap_means, bins=30, alpha=0.7, color='skyblue', label='Bootstrap Means')
-    plt.axvline(lower_b, color='red', linestyle='--', label='Bootstrap CI Lower')
-    plt.axvline(upper_b, color='red', linestyle='--', label='Bootstrap CI Upper')
-    plt.axvline(true_mean, color='green', linestyle='-', label='True Mean')
-    plt.title(f'Bootstrap CI for {distribution_name} with n={size}')
-    plt.xlabel('Mean')
-    plt.ylabel('Frequency')
-    plt.legend()
-
-    # График для джекнайфа
-    plt.subplot(1, 2, 2)
-    plt.hist(jackknife_means, bins=30, alpha=0.7, color='lightcoral', label='Jackknife Means')
-    plt.axvline(lower_j, color='red', linestyle='--', label='Jackknife CI Lower')
-    plt.axvline(upper_j, color='red', linestyle='--', label='Jackknife CI Upper')
-    plt.axvline(true_mean, color='green', linestyle='-', label='True Mean')
-    plt.title(f'Jackknife CI for {distribution_name} with n={size}')
-    plt.xlabel('Mean')
-    plt.ylabel('Frequency')
-    plt.legend()
-
-    plt.tight_layout()
-    plt.show()
+# Параметры задачи (уменьшила для ускорения работы)
+sample_sizes = [10, 100, 500, 1000, 2000]  # Различные размеры выборок
+num_samples = 1000  # Количество повторений
+alpha = 0.05  # Уровень значимости для доверительных интервалов
+true_mean = 0  # Истинное математическое ожидание для проверки покрытия
 
 
-# Определение распределений и размеров выборок
-distributions = ['uniform', 'normal', 'sum_uniform']
-sample_sizes = [1000, 5000]
+# Функция для проведения эксперимента и оценки покрытия доверительных интервалов
+def evaluate_coverage(distribution_func):
+    coverage_results_bootstrap = []  # Списки для хранения результатов покрытия
+    coverage_results_jackknife = []
 
-# Генерация и построение графиков для каждого распределения и размера выборки
-for distribution in distributions:
     for size in sample_sizes:
-        samples = generate_samples(distribution, size)
-        sample = samples[0]  # Берем первую выборку для визуализации
-        plot_confidence_intervals(sample, distribution, size)
+        bootstrap_coverage_count = 0  # Счетчики для успешных покрытий
+        jackknife_coverage_count = 0
+
+        for _ in range(num_samples):
+            data = distribution_func(size)  # Генерируем случайную выборку заданного размера
+
+            lower_bootstrap, upper_bootstrap = bootstrap(data, alpha=alpha)
+            if lower_bootstrap <= true_mean <= upper_bootstrap:
+                bootstrap_coverage_count += 1  # Увеличиваем счетчик, если истинное значение покрыто
+
+            lower_jackknife, upper_jackknife = jackknife(data)
+            if lower_jackknife <= true_mean <= upper_jackknife:
+                jackknife_coverage_count += 1  # Увеличиваем счетчик, если истинное значение покрыто
+
+        # Оценка доли покрытий для текущего размера выборки
+        bootstrap_coverage_rate = bootstrap_coverage_count / num_samples
+        jackknife_coverage_rate = jackknife_coverage_count / num_samples
+
+        coverage_results_bootstrap.append(bootstrap_coverage_rate)  # Добавляем результаты в списки
+        coverage_results_jackknife.append(jackknife_coverage_rate)
+
+    return coverage_results_bootstrap, coverage_results_jackknife  # Возвращаем результаты покрытия
+
+
+# Генераторы случайных выборок для разных распределений
+uniform_dist = lambda size: np.random.uniform(-1, 1, size)
+normal_dist = lambda size: np.random.normal(0, 1, size)
+sum_uniform_dist = lambda size: np.random.uniform(-1, 1, size) + np.random.uniform(-1, 1, size)
+
+# Оценка покрытия для каждого распределения
+uniform_bootstrap, uniform_jackknife = evaluate_coverage(uniform_dist)
+normal_bootstrap, normal_jackknife = evaluate_coverage(normal_dist)
+sum_uniform_bootstrap, sum_uniform_jackknife = evaluate_coverage(sum_uniform_dist)
+
+# Построение графиков
+plt.figure(figsize=(12, 6))
+
+plt.subplot(1, 2, 1)
+plt.plot(sample_sizes, uniform_bootstrap, label='Равномерное распределение', marker='o')
+plt.plot(sample_sizes, normal_bootstrap, label='Нормальное распределение', marker='o')
+plt.plot(sample_sizes, sum_uniform_bootstrap, label='Сумма равномерных', marker='o')
+plt.axhline(y=0.95, color='r', linestyle='--', label='Ожидаемое покрытие (0.95)')
+plt.xlabel('Размер выборки')
+plt.ylabel('Вероятность покрытия')
+plt.title('Bootstrap')
+plt.legend()
+
+
+plt.subplot(1, 2, 2)
+plt.plot(sample_sizes, uniform_jackknife, label='Равномерное распределение', marker='o')
+plt.plot(sample_sizes, normal_jackknife, label='Нормальное распределение', marker='o')
+plt.plot(sample_sizes, sum_uniform_jackknife, label='Сумма равномерных', marker='o')
+plt.axhline(y=0.95, color='r', linestyle='--', label='Ожидаемое покрытие (0.95)')
+plt.xlabel('Размер выборки')
+plt.ylabel('Вероятность покрытия')
+plt.title('Jackknife')
+plt.legend()
+
+plt.tight_layout()
+plt.show()
