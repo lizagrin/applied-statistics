@@ -1,6 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import scipy.stats as stats
+from scipy.stats import norm
 
 
 # Генераторы выборок
@@ -18,10 +19,19 @@ def generate_sum_2_uniform_minus1_1(N):
 
 # Функция для вычисления доверительных интервалов
 def confidence_interval(sample, confidence=0.95):
-    mean = np.mean(sample)
-    sem = stats.sem(sample)  # Стандартная ошибка среднего
-    interval = stats.t.interval(confidence, len(sample) - 1, loc=mean, scale=sem)
-    return interval
+    n = len(sample)
+    sample_mean = np.mean(sample)
+    sample_variance = np.var(sample, ddof=1)
+
+    # Квантиль для стандартного нормального распределения
+    z_score = norm.ppf((1 + confidence) / 2)
+
+    # Вычисление границ доверительного интервала
+    margin_of_error = z_score * (np.sqrt(sample_variance) / np.sqrt(n))
+    lower_bound = sample_mean - margin_of_error
+    upper_bound = sample_mean + margin_of_error
+
+    return lower_bound, upper_bound
 
 
 # Функция для генерации выборок и вычисления средних значений
@@ -73,7 +83,7 @@ def plot_means(n_values, means_uniform, means_normal, means_cauchy):
 
 
 # Параметры задачи
-n_values = [10, 10**2, 10**3, 10**4, 10**5, 10**6]
+n_values = [10, 10 ** 2, 10 ** 3, 10 ** 4, 10 ** 5, 10 ** 6]
 n_values_2 = [10, 100, 1000, 5000]
 n_trials = 10000
 p = 0.95
