@@ -17,6 +17,7 @@ def generate_normal(N):
 def generate_sum_2_uniform_minus1_1(N):
     return np.random.uniform(-1, 1, N) + np.random.uniform(-1, 1, N)
 
+
 # Формула (1) для вычисления доверительных интервалов с использованием нормального распределения
 def confidence_interval(sample, confidence=0.95):
     n = len(sample)  # Размер выборки
@@ -51,9 +52,9 @@ def confidence_interval_student(sample, confidence=0.95):
 
 # Формула (3) для вычисления доверительных интервалов на основе эмпирического распределения
 def confidence_interval_empirical(sample, confidence=0.95):
-    sorted_sample = np.sort(sample)  # Сортировка выборки по возрастанию
-    a = sorted_sample[0]  # Минимальное значение в выборке
-    b = sorted_sample[-1]  # Максимальное значение в выборке
+    sorted_sample = np.sort(sample)
+    a = sorted_sample[1]  # Второе минимальное значение в выборке
+    b = sorted_sample[-2]  # Второе максимальное значение в выборке
 
     n = len(sample)  # Размер выборки
     sample_mean = np.mean(sample)  # Среднее значение выборки
@@ -69,7 +70,7 @@ def confidence_interval_empirical(sample, confidence=0.95):
 
 
 # Параметры задачи
-n_values = [10, 100, 1000, 5000, 10000]
+n_values = [50, 100, 500, 1000, 5000, 10000]
 n_trials = 1000
 p = 0.95
 
@@ -80,7 +81,6 @@ generators = {
     'Sum of uniform': generate_sum_2_uniform_minus1_1
 }
 
-# Цвета для каждой границы распределения
 colors = {
     'Uniform_lower': 'blue',
     'Uniform_upper': 'cyan',
@@ -90,26 +90,24 @@ colors = {
     'Sum of uniform_upper': 'orange'
 }
 
-# Истинные математические ожидания для каждого распределения
 true_means = {
     'Uniform': 0,
     'Normal': 0,
     'Sum of uniform': 0
 }
 
-# Генерация выборок и расчет доверительных интервалов
 intervals_formula_1 = {gen: [] for gen in generators}
 intervals_formula_2 = {gen: [] for gen in generators}
 intervals_formula_3 = {gen: [] for gen in generators}
 
-coverage_formula_1 = {gen: [] for gen in generators}
-coverage_formula_2 = {gen: [] for gen in generators}
-coverage_formula_3 = {gen: [] for gen in generators}
-
+# Для каждого генератора выборок (равномерного, нормального и суммы двух равномерных)
 for gen_name, gen_func in generators.items():
+    # Истинное среднее значение для текущего распределения
     true_mean = true_means[gen_name]
 
+    # Для каждого значения размера выборки
     for N in n_values:
+        # Списки для хранения нижних и верхних границ доверительных интервалов для каждой из трех формул
         lower_bounds_1 = []
         upper_bounds_1 = []
         lower_bounds_2 = []
@@ -117,79 +115,52 @@ for gen_name, gen_func in generators.items():
         lower_bounds_3 = []
         upper_bounds_3 = []
 
-        coverage_count_1 = 0
-        coverage_count_2 = 0
-        coverage_count_3 = 0
-
+        # Проведение нескольких экспериментов для получения статистически значимых результатов
         for _ in range(n_trials):
+            # Генерация выборки заданного размера N
             sample = gen_func(N)
-            ci_1 = confidence_interval(sample, confidence=p)
-            ci_2 = confidence_interval_student(sample, confidence=p)
-            ci_3 = confidence_interval_empirical(sample, confidence=p)
+            # Добавление выброса 100 в выборку
+            sample_with_outlier = np.append(sample, 100)
 
-            lower_bounds_1.append(ci_1[0])
-            upper_bounds_1.append(ci_1[1])
-            lower_bounds_2.append(ci_2[0])
-            upper_bounds_2.append(ci_2[1])
-            lower_bounds_3.append(ci_3[0])
-            upper_bounds_3.append(ci_3[1])
+            # Вычисление доверительных интервалов для выборки с выбросом по трем различным методам
+            lb1, ub1 = confidence_interval(sample_with_outlier, p)
+            lb2, ub2 = confidence_interval_student(sample_with_outlier, p)
+            lb3, ub3 = confidence_interval_empirical(sample_with_outlier, p)
 
-            # Подсчет покрытия
-            if ci_1[0] <= true_mean <= ci_1[1]:
-                coverage_count_1 += 1
-            if ci_2[0] <= true_mean <= ci_2[1]:
-                coverage_count_2 += 1
-            if ci_3[0] <= true_mean <= ci_3[1]:
-                coverage_count_3 += 1
+            # Сохранение нижних и верхних границ для каждого метода
+            lower_bounds_1.append(lb1)
+            upper_bounds_1.append(ub1)
+            lower_bounds_2.append(lb2)
+            upper_bounds_2.append(ub2)
+            lower_bounds_3.append(lb3)
+            upper_bounds_3.append(ub3)
 
-        # Добавление среднего значения нижней и верхней границ доверительных интервалов
+        # Средние значения нижних и верхних границ доверительных интервалов для текущего размера выборки
         intervals_formula_1[gen_name].append((np.mean(lower_bounds_1), np.mean(upper_bounds_1)))
         intervals_formula_2[gen_name].append((np.mean(lower_bounds_2), np.mean(upper_bounds_2)))
         intervals_formula_3[gen_name].append((np.mean(lower_bounds_3), np.mean(upper_bounds_3)))
 
-        # Сохранение доли случаев, когда истинное значение попадает в доверительный интервал
-        coverage_formula_1[gen_name].append(coverage_count_1 / n_trials)
-        coverage_formula_2[gen_name].append(coverage_count_2 / n_trials)
-        coverage_formula_3[gen_name].append(coverage_count_3 / n_trials)
 
-# Визуализация доверительных интервалов для всех трех формул на одном графике
-plt.figure(figsize=(32, 20))
+# Функция для построения графиков
+def plot_intervals(n_values, intervals_dict, title):
+    plt.figure(figsize=(14, 8))
 
-for gen_name in generators:
-    # Формула 1
-    lower_bounds_1, upper_bounds_1 = zip(*intervals_formula_1[gen_name])
-    plt.plot(n_values, lower_bounds_1, marker='o', linestyle='-', color=colors[f'{gen_name}_lower'],
-             label=f'{gen_name} lower bound (Formula 1)', alpha=0.7)
-    plt.plot(n_values, upper_bounds_1, marker='o', linestyle='-', color=colors[f'{gen_name}_upper'],
-             label=f'{gen_name} upper bound (Formula 1)', alpha=0.7)
+    for gen_name in intervals_dict:
+        lower_bounds, upper_bounds = zip(*intervals_dict[gen_name])
+        plt.plot(n_values, lower_bounds, label=f'{gen_name} Lower', color=colors[f'{gen_name}_lower'], linestyle='-',
+                 marker='o')
+        plt.plot(n_values, upper_bounds, label=f'{gen_name} Upper', color=colors[f'{gen_name}_upper'], linestyle='--',
+                 marker='o')
 
-    # Формула 2
-    lower_bounds_2, upper_bounds_2 = zip(*intervals_formula_2[gen_name])
-    plt.plot(n_values, lower_bounds_2, marker='x', linestyle='--', color=colors[f'{gen_name}_lower'],
-             label=f'{gen_name} lower bound (Formula 2)', alpha=0.7)
-    plt.plot(n_values, upper_bounds_2, marker='x', linestyle='--', color=colors[f'{gen_name}_upper'],
-             label=f'{gen_name} upper bound (Formula 2)', alpha=0.7)
+    plt.xlabel('Sample Size')
+    plt.ylabel('Confidence Interval Bound')
+    plt.title(title)
+    plt.legend()
+    plt.grid(True)
+    plt.show()
 
-    # Формула 3
-    lower_bounds_3, upper_bounds_3 = zip(*intervals_formula_3[gen_name])
-    plt.plot(n_values, lower_bounds_3, marker='s', linestyle='-.', color=colors[f'{gen_name}_lower'],
-             label=f'{gen_name} lower bound (Formula 3)', alpha=0.7)
-    plt.plot(n_values, upper_bounds_3, marker='s', linestyle='-.', color=colors[f'{gen_name}_upper'],
-             label=f'{gen_name} upper bound (Formula 3)', alpha=0.7)
 
-plt.xscale('log')
-plt.xlabel('Sample size (n)', fontsize=30)
-plt.ylabel('Confidence interval boundaries', fontsize=30)
-plt.title('Confidence intervals for different distributions', fontsize=30)
-plt.grid(True, linewidth=0.3)
-plt.legend(loc='upper left', bbox_to_anchor=(1.05, 1), fontsize=22)
-plt.tight_layout(rect=[0, 0, 1, 1])
-plt.show()
-
-# Вывод доли покрытия для каждого генератора и формулы
-for gen_name in generators:
-    print(f"{gen_name}:")
-    print(f"  Formula 1 coverage: {coverage_formula_1[gen_name]}")
-    print(f"  Formula 2 coverage: {coverage_formula_2[gen_name]}")
-    print(f"  Formula 3 coverage: {coverage_formula_3[gen_name]} \n")
-
+# Построение графиков
+plot_intervals(n_values, intervals_formula_1, 'Confidence Intervals using Normal Distribution (formula 1)')
+plot_intervals(n_values, intervals_formula_2, 'Confidence Intervals using Student\'s t-Distribution (formula 2)')
+plot_intervals(n_values, intervals_formula_3, 'Confidence Intervals using Empirical Distribution (formula 3)')
