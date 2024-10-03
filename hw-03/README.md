@@ -25,9 +25,8 @@
 За основу взят код с практики в папке `practice-03/main.py`
 
 Результат:
-
-`Generator: Uniform, Optimal k: 0.294, Actual Coverage Probability: 0.9493`
-
-`Generator: Normal, Optimal k: 0.245, Actual Coverage Probability: 0.9505`
-
-`Generator: Sum of uniform, Optimal k: 0.245, Actual Coverage Probability: 0.9495`
+```
+Generator: Uniform, Optimal k: 0.294, Actual Coverage Probability: 0.9493
+Generator: Normal, Optimal k: 0.245, Actual Coverage Probability: 0.9505
+Generator: Sum of uniform, Optimal k: 0.245, Actual Coverage Probability: 0.9495
+```

@@ -39,3 +39,13 @@ Sum of Uniforms (Quantile 0.01): Exact CI: (-1.8073187268107935, -1.560361834584
 Sum of Uniforms (Quantile 0.99): Exact CI excludes X_(1) or X_(n) at sample size: 555
 Sum of Uniforms (Quantile 0.99): Exact CI: (1.5463850037377644, 1.8285802979469328), Approx CI: (1.5463850037377644, 1.9236943434475102) 
 ```
+
+## Пункт 3
+Реализация находится в файле `mad.py`
+
+Найдены доверительные интервалы для MAD в каждом распределении
+```
+Uniform (-1, 1): MAD = 0.4939, 95% CI = (0.4796, 0.5083)
+Normal (0, 1): MAD = 0.8002, 95% CI = (0.7770, 0.8235)
+Sum of two Uniform (-1, 1): MAD = 0.6733, 95% CI = (0.6537, 0.6928)
+```
