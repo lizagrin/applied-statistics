@@ -31,25 +31,19 @@ def large_n_approximation(data, confidence=0.95):
 def small_n_approximation(data, confidence=0.95):
     n = len(data)
     z = norm.ppf((1 + confidence) / 2)
-
     # Индексы k1 и k2 для доверительных интервалов
     k1 = int(0.5 * n - 0.5 * np.sqrt(n) * z)
     k2 = int(0.5 * n + 0.5 * np.sqrt(n) * z) + 1
-
     # Сортируем данные
     sorted_data = np.sort(data)
-
     # Граничные значения x_k1 и x_k2
     x_k1, x_k2 = sorted_data[k1], sorted_data[k2]
-
     # Рассчитываем минимальные и максимальные расстояния
     y_1 = np.minimum(np.abs(data - x_k1), np.abs(data - x_k2))
     y_2 = np.maximum(np.abs(data - x_k1), np.abs(data - x_k2))
-
     # Сортируем минимальные и максимальные расстояния
     sorted_y_1 = sorted(y_1)
     sorted_y_2 = sorted(y_2)
-
     # Возвращаем отсортированные минимальные и максимальные границы
     return sorted_y_1[k1], sorted_y_2[k2]
 
@@ -66,7 +60,7 @@ mad_normal = mad(normal_dist)
 mad_sum_uniform = mad(sum_uniform_dist)
 
 # Меньшие размеры выборки
-sample_sizes = [10, 50, 500, 1000, 10000]
+sample_sizes = [10, 100, 500, 1000, 10000]
 
 # Confidence level
 confidence_level = 0.95
