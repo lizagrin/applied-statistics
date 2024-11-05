@@ -1,4 +1,5 @@
-import numpy as np
+import autograd.numpy as np  # Используем autograd для автоматического дифференцирования
+from autograd import jacobian
 import matplotlib.pyplot as plt
 
 
@@ -45,19 +46,31 @@ def complex_step(f, x, h):
     return grad
 
 
+# Автоматическое дифференцирование
+def automatic_differentiation(f, x):
+    jacobian_f = jacobian(f)
+    return jacobian_f(x)
+
+
 # Списки для сохранения значений производных для каждого метода
 finite_diffs = []
 complex_steps = []
+automatic_diffs = []
+
 # Начальные условия
 x = np.zeros(3)  # Вектор нулевых значений (можно выбрать любое количество элементов)
 h_values = [10 ** (-p) for p in range(300, -1, -1)]  # Массив значений alpha = 10^(-p)
 
-# Вычисления
+# Вычисления для всех методов
 for h in h_values:
     finite_diff_grad = finite_difference(f, x, h)
     complex_step_grad = complex_step(f, x, h)
-    finite_diffs.append(finite_diff_grad[0])  # Сохраняем значение по первому аргументу
+    auto_diff_grad = automatic_differentiation(f, x)
+
+    # Сохраняем значение производной по первому аргументу для каждого метода
+    finite_diffs.append(finite_diff_grad[0])
     complex_steps.append(complex_step_grad[0])
+    automatic_diffs.append(auto_diff_grad[0, 0])
     print(f"h = {h}")
     print(f"Конечная разность: {finite_diff_grad}")
     print(f"Комплексное приращение: {complex_step_grad}")
@@ -65,14 +78,16 @@ for h in h_values:
 # Преобразуем в массивы для удобства графиков
 finite_diffs = np.array(finite_diffs)
 complex_steps = np.array(complex_steps)
+automatic_diffs = np.array(automatic_diffs)
 
-# Построение графиков
+# Построение графика
 plt.figure(figsize=(10, 6))
 plt.plot(np.log10(h_values), finite_diffs, label="Конечная разность", color='r')
-plt.plot(np.log10(h_values), complex_steps, label="Комплексное приращение", color='b')
+plt.plot(np.log10(h_values), complex_steps, label="Комплексное приращение", color='g')
+plt.plot(np.log10(h_values), automatic_diffs, label="Автоматическое дифференцирование", color='b')
 plt.xlabel("log10(h)")
 plt.ylabel("Оценка производной")
-plt.title("Зависимость оценки производной от значения h")
+plt.title("Сравнение методов оценки производной")
 plt.legend()
 plt.grid(True)
 plt.show()
