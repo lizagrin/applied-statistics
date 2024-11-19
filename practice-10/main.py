@@ -65,7 +65,7 @@ results = {"ols": [], "lad": [], "minimax": []}
 noise_types = ["normal", "uniform", "laplace"]
 
 for noise_type in noise_types:
-    print(f"\nШум: {noise_type}")
+    print(f"\nРаспределение: {noise_type}")
     estimates = {"ols": [], "lad": [], "minimax": []}
 
     for _ in range(N):
