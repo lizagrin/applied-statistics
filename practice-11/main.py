@@ -14,6 +14,7 @@ params_normal = {"mean": 0, "std": 1}
 params_uniform = {"low": -np.sqrt(3), "high": np.sqrt(3)}
 params_exponential = {"scale": 1, "shift": 1}
 
+
 # Пункт 1
 # Функция для генерации выборок
 def generate_samples(n, distribution, params, delta_mu=0):
@@ -25,8 +26,6 @@ def generate_samples(n, distribution, params, delta_mu=0):
     elif distribution == "exponential":
         samples = np.random.exponential(scale=params["scale"], size=(N, n))
         return (samples - params["shift"]) + delta_mu
-    else:
-        raise ValueError("Неизвестное распределение")
 
 
 # Проверка гипотезы
@@ -112,9 +111,9 @@ for dist in ["normal", "uniform", "exponential"]:
 
         # Добавляем в легенду значения delta_mu с шагом и крайние значения
         if (
-            abs((delta_mu - min_delta_mu) % legend_step) < 1e-6 or  # Кратность шагу
-            delta_mu == min_delta_mu or                            # Наименьшее значение
-            delta_mu == max_delta_mu                              # Наибольшее значение
+                abs((delta_mu - min_delta_mu) % legend_step) < 1e-6 or  # Кратность шагу
+                delta_mu == min_delta_mu or  # Наименьшее значение
+                delta_mu == max_delta_mu  # Наибольшее значение
         ) and delta_mu not in selected_delta_mu:  # Исключаем повторения
             handles.append(line)
             labels.append(f"Delta_mu={delta_mu:.2f}")
@@ -127,7 +126,8 @@ for dist in ["normal", "uniform", "exponential"]:
     plt.grid()
 
 # Добавление общей легенды с выбранными значениями delta_mu
-plt.legend(handles, labels + ["Alpha (significance level)"], loc="center left", fontsize="small", title="Delta_mu", bbox_to_anchor=(1.02, 0.5), ncol=1)
+plt.legend(handles, labels + ["Alpha (significance level)"], loc="center left", fontsize="small", title="Delta_mu",
+           bbox_to_anchor=(1.02, 0.5), ncol=1)
 plt.tight_layout(rect=[0, 0, 0.85, 0.95])  # Увеличиваем отступ для легенды
 plt.suptitle("Зависимость alpha* от размера выборки при разных delta_mu", fontsize=16)
 plt.show()
