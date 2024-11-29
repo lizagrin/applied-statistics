@@ -46,8 +46,6 @@ def perform_tests(samples, alpha):
     return sw_rejection_rate, sf_rejection_rate
 
 
-# График уровня значимости
-plt.figure(figsize=(12, 8))
 colors = {
     'normal': 'blue',
     'uniform': 'green',
@@ -56,7 +54,9 @@ colors = {
     'cauchy': 'brown',
     'lognormal': 'pink'
 }
-
+plt.figure(figsize=(16, 12))
+# Подграфик пункта 3
+plt.subplot(2, 1, 1)  # График для alpha*
 for distribution in ['normal', 'uniform', 'exponential', 'beta', 'cauchy', 'lognormal']:
     sw_results = []
     sf_results = []
@@ -98,6 +98,95 @@ plt.axhline(y=alpha, color='r', linestyle='--', label=f"alpha = {alpha}")
 plt.xlabel("Размер выборки (n)")
 plt.ylabel("alpha*")
 plt.title("Уровень значимости для различных распределений")
+plt.legend()
+plt.grid()
+
+# Подграфик пункта 4
+plt.subplot(2, 1, 2)
+for distribution in ['uniform', 'exponential', 'beta', 'cauchy', 'lognormal']:
+    sw_beta_results = []
+    sf_beta_results = []
+    sw_beta_conf_intervals = []
+    sf_beta_conf_intervals = []
+
+    for n in n_values:
+        samples = generate_samples(distribution, n, N)
+        sw_rate, sf_rate = perform_tests(samples, alpha)
+
+        # Вычисление beta* (доля ошибок 2 рода)
+        beta_sw = 1 - sw_rate
+        beta_sf = 1 - sf_rate
+
+        # Вычисление доверительных интервалов
+        sw_se = np.sqrt((beta_sw * (1 - beta_sw)) / N)
+        sf_se = np.sqrt((beta_sf * (1 - beta_sf)) / N)
+
+        sw_ci_lower = beta_sw - 1.96 * sw_se
+        sw_ci_upper = beta_sw + 1.96 * sw_se
+
+        sf_ci_lower = beta_sf - 1.96 * sf_se
+        sf_ci_upper = beta_sf + 1.96 * sf_se
+
+        sw_beta_results.append(beta_sw)
+        sf_beta_results.append(beta_sf)
+        sw_beta_conf_intervals.append((sw_ci_lower, sw_ci_upper))
+        sf_beta_conf_intervals.append((sf_ci_lower, sf_ci_upper))
+
+    # Графики для beta* (ошибок 2 рода)
+    sw_beta_results = np.array(sw_beta_results)
+    sf_beta_results = np.array(sf_beta_results)
+    sw_beta_conf_intervals = np.array(sw_beta_conf_intervals)
+    sf_beta_conf_intervals = np.array(sf_beta_conf_intervals)
+
+    plt.plot(n_values, sw_beta_results, label=f"SW {distribution}", linestyle='-', color=colors[distribution])
+    plt.fill_between(n_values, sw_beta_conf_intervals[:, 0], sw_beta_conf_intervals[:, 1], alpha=0.2,
+                     color=colors[distribution])
+
+    plt.plot(n_values, sf_beta_results, label=f"SF {distribution}", linestyle='--', color=colors[distribution])
+    plt.fill_between(n_values, sf_beta_conf_intervals[:, 0], sf_beta_conf_intervals[:, 1], alpha=0.2,
+                     color=colors[distribution])
+
+plt.xlabel("Размер выборки (n)")
+plt.ylabel("beta*")
+plt.title("Ошибки II рода (beta*) для различных ненормальных распределений")
+plt.legend()
+plt.grid()
+
+plt.tight_layout()
+plt.show()
+
+# Параметры для пункта 5
+d_values = np.arange(0.1, 1.1, 0.1)  # Значения d от 0.1 до 1.0 с шагом 0.1
+
+plt.figure(figsize=(12, 8))
+
+for distribution in ['normal', 'uniform', 'exponential', 'beta', 'cauchy', 'lognormal']:
+    sw_results_d = []
+
+    for d in d_values:
+        sw_results_for_d = []
+
+        for n in n_values:
+            samples = generate_samples(distribution, n, N)
+            noise = np.random.uniform(low=-d, high=d, size=(N, n))  # Шум
+            noisy_samples = samples + noise  # Сложение с шумом
+
+            # Тестирование гипотезы
+            sw_rate, _ = perform_tests(noisy_samples, alpha)  # Используем только критерий Шапиро-Уилка
+            sw_results_for_d.append(sw_rate)
+
+        # Среднее значение alpha* для данного d
+        sw_results_d.append(np.mean(sw_results_for_d))
+
+    # Построение графика для текущего распределения
+    sw_results_d = np.array(sw_results_d)
+    plt.plot(d_values, sw_results_d, label=f"{distribution}", linestyle='-', color=colors[distribution])
+
+# Настройка графика
+plt.axhline(y=alpha, color='r', linestyle='--', label=f"alpha = {alpha}")
+plt.xlabel("Значение d")
+plt.ylabel("alpha*")
+plt.title("Изменение alpha* при подмешивании шума для различных распределений")
 plt.legend()
 plt.grid()
 plt.show()
