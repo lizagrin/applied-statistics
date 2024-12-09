@@ -5,26 +5,19 @@ from scipy.stats import norm
 # Параметры задачи
 N = 100  # Число сигналов
 n = 100  # Число точек в каждом сигнале
-noise_range = 0.2  # Максимальная случайная погрешность
+t = np.arange(n)  # Моменты времени
+base_signal = 5 * np.exp(-2 * t / n)  # Сигнал x(t) = 5 * exp(-2 * t / n)
 
 
-# Генерация сигналов
-def generate_signals(distribution, N, n):
+# Генерация сигналов для каждого распределения
+def generate_signals(distribution, N, base_signal):
     if distribution == "normal":
-        signals = np.random.randn(N, n)  # Нормальное распределение
+        signals = np.random.normal(size=(N, len(base_signal)))  # Нормальное распределение
     elif distribution == "uniform":
-        signals = np.random.uniform(-np.sqrt(3), np.sqrt(3), size=(N, n))  # Равномерное
+        signals = np.random.uniform(-1, 1, size=(N, len(base_signal)))  # Равномерное распределение
     elif distribution == "exponential":
-        signals = np.random.exponential(scale=1, size=(N, n))  # Экспоненциальное
-    # Нормировка до нулевого МО и единичной дисперсии
-    signals = (signals - np.mean(signals, axis=1, keepdims=True)) / np.std(signals, axis=1, keepdims=True)
-    return signals
-
-
-# Добавление погрешности
-def add_noise(signals, noise_range):
-    noise = np.random.uniform(-noise_range, noise_range, size=signals.shape)
-    return signals + noise
+        signals = np.random.exponential(scale=1, size=(N, len(base_signal)))  # Экспоненциальное распределение
+    return signals * base_signal  # Наложение распределения на базовый сигнал
 
 
 # Вычисление автокорреляционной функции
@@ -36,16 +29,15 @@ def autocorrelation(signal):
 
 # Функция для нахождения tau
 def find_tau(autocorr, stderr, z):
-    # Находит минимальное значение tau > 0, где автокорреляция входит в доверительный интервал [-z*stderr, z*stderr].
     for tau in range(1, len(autocorr)):  # Tau > 0
-        if abs(autocorr[tau]) <= z * stderr[tau]:  # stderr зависит от tau
+        if abs(autocorr[tau]) <= z * stderr:  # Проверяем границы доверительного интервала
             return tau
     return len(autocorr)  # Если не найдено, возвращаем максимальное значение tau
 
 
 # Генерация сигналов для каждого распределения
 distributions = ["normal", "uniform", "exponential"]
-signals_data = {dist: add_noise(generate_signals(dist, N, n), noise_range) for dist in distributions}
+signals_data = {dist: generate_signals(dist, N, base_signal) for dist in distributions}
 
 # Вычисление автокорреляции
 autocorrelations = {dist: np.array([autocorrelation(sig) for sig in signals]) for dist, signals in signals_data.items()}
@@ -80,7 +72,7 @@ plt.show()
 # Поиск значений tau для каждого сигнала
 taus = {
     dist: [
-        find_tau(autocorr, stderr=np.std(autocorr, axis=0), z=z)
+        find_tau(autocorr, stderr=np.std(autocorr), z=z)
         for autocorr in autocorrelations[dist]
     ]
     for dist in distributions
