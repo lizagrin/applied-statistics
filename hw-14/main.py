@@ -3,14 +3,16 @@ import matplotlib.pyplot as plt
 from scipy.optimize import fsolve
 import warnings
 
+
 # Система уравнений
 # a1 * x + a2 * y = b1
 # a3 * x^2 + a4 * y^2 = b2
 def system_of_equations(vars, a1, a2, a3, a4, b1, b2):
     x, y = vars
     eq1 = a1 * x + a2 * y - b1
-    eq2 = a3 * x**2 + a4 * y**2 - b2
+    eq2 = a3 * x ** 2 + a4 * y ** 2 - b2
     return [eq1, eq2]
+
 
 # Метод Ньютона с использованием встроенной библиотеки
 def newton_solver(a_ranges, b_ranges, tol=1e-5, max_iter=100):
@@ -33,6 +35,7 @@ def newton_solver(a_ranges, b_ranges, tol=1e-5, max_iter=100):
         print(f"Ошибка решения методом Ньютона: {e}")
         return None
 
+
 # Метод Монте-Карло для системы уравнений
 def monte_carlo_solver_system(a_ranges, b_ranges, N=1000):
     solutions = []
@@ -51,6 +54,7 @@ def monte_carlo_solver_system(a_ranges, b_ranges, N=1000):
         except:
             pass
     return np.array(solutions)
+
 
 # Аналитическая оценка погрешности для системы уравнений
 # Решение аналитическим методом и вычисление погрешности
@@ -75,9 +79,10 @@ def analytical_error_system(a_ranges, b_ranges):
 
     x, y = root_guess
     error_x = abs(delta_a1 * x + delta_a2 * y + delta_b1)
-    error_y = abs(delta_a3 * x**2 + delta_a4 * y**2 + delta_b2)
+    error_y = abs(delta_a3 * x ** 2 + delta_a4 * y ** 2 + delta_b2)
 
     return root_guess, (error_x, error_y)
+
 
 # Параметры с неопределённостью
 a_ranges = {"a1": [1.0, 1.1], "a2": [1.0, 1.2], "a3": [0.9, 1.0], "a4": [0.8, 0.9]}
