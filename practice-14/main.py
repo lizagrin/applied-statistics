@@ -1,11 +1,8 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from scipy.optimize import bisect
+from scipy.optimize import bisect, newton
 
 # Заданные параметры для уравнений и их погрешности
-# f1(x) = a2*x^2 + a1*x + a0
-# f2(x) = exp(a2*x) + a1*x + a0
-
 a2_f1_range = [1.0, 1.1]
 a1_f1_range = [-0.1, 0.1]
 a0_f1_range = [-0.1, 0.1]
@@ -44,7 +41,7 @@ def monte_carlo_solver(func, a_ranges, N=1000, tol=1e-5):
         a2 = np.random.uniform(*a_ranges["a2"])
         args = (a0, a1, a2)
         if func == f1 and not check_discriminant(a0, a1, a2):
-            continue  # Пропускаем комбинации с отрицательным дискриминантом
+            continue
         if has_root(func, -10, 10, args):
             try:
                 root = bisect(func, -10, 10, args=args, xtol=tol)
@@ -68,7 +65,7 @@ def interval_bisection(func, a_ranges, tol=1e-5):
     if not has_root(func, -10, 10, args):
         return [], history
 
-    for _ in range(20):  # Ограничим количество итераций
+    for _ in range(20):
         new_intervals = []
         for interval in intervals:
             mid = (interval[0] + interval[1]) / 2
@@ -83,20 +80,38 @@ def interval_bisection(func, a_ranges, tol=1e-5):
     return intervals, history
 
 
-# 3. Аналитическая оценка погрешности
-def analytical_error(func, a_ranges, root_guess):
-    delta_a0 = (a_ranges["a0"][1] - a_ranges["a0"][0]) / 2
-    delta_a1 = (a_ranges["a1"][1] - a_ranges["a1"][0]) / 2
-    delta_a2 = (a_ranges["a2"][1] - a_ranges["a2"][0]) / 2
+# 3. Аналитическое решение для f1
+def analytical_solution_f1(a_ranges):
+    a0 = np.mean(a_ranges["a0"])
+    a1 = np.mean(a_ranges["a1"])
+    a2 = np.mean(a_ranges["a2"])
 
-    # Частные производные приближенно
-    partial_a0 = 1  # df/da0
-    partial_a1 = root_guess  # df/da1
-    partial_a2 = root_guess ** 2  # df/da2
+    discriminant = a1 ** 2 - 4 * a2 * a0
+    if discriminant < 0:
+        print("Дискриминант отрицательный, корней нет.")
+        return None, None
 
-    # Суммарная погрешность
-    error = abs(partial_a0 * delta_a0) + abs(partial_a1 * delta_a1) + abs(partial_a2 * delta_a2)
-    return error
+    root1 = (-a1 + np.sqrt(discriminant)) / (2 * a2)
+    root2 = (-a1 - np.sqrt(discriminant)) / (2 * a2)
+    return root1, root2
+
+
+# 4. Аналитическое решение для f2
+def analytical_solution_f2(a_ranges, tol=1e-5):
+    a0 = np.mean(a_ranges["a0"])
+    a1 = np.mean(a_ranges["a1"])
+    a2 = np.mean(a_ranges["a2"])
+
+    def func_f2(x):
+        return np.exp(a2 * x) + a1 * x + a0
+
+    x0 = -1.0  # Начальное приближение
+    try:
+        root = newton(func_f2, x0, tol=tol)
+    except RuntimeError:
+        print("Не удалось найти корень для f2.")
+        return None
+    return root
 
 
 # Запуск методов для обеих функций
@@ -107,9 +122,7 @@ def solve_and_analyze(func, params, func_name):
     roots_mc = monte_carlo_solver(func, params)
     if roots_mc:
         mean_root = np.mean(roots_mc)
-        error = analytical_error(func, params, mean_root)
         print(f"Средний корень методом Монте-Карло: {mean_root:.5f}")
-        print(f"Аналитическая погрешность корня: {error:.5f}")
     else:
         print("Корни не найдены методом Монте-Карло.")
 
@@ -117,6 +130,8 @@ def solve_and_analyze(func, params, func_name):
     intervals, history = interval_bisection(func, params)
     if intervals:
         print(f"Интервалы для корня после бисекции: {intervals}")
+
+        # Построение графика изменения интервалов
         plt.figure(figsize=(10, 6))
         for i, step in enumerate(history):
             for interval in step:
@@ -124,9 +139,20 @@ def solve_and_analyze(func, params, func_name):
         plt.title(f"Изменение интервалов для {func_name} методом бисекции")
         plt.xlabel("Итерация")
         plt.ylabel("Интервал")
+        plt.grid()
         plt.show()
     else:
         print("Корни не найдены методом бисекции.")
+
+    # Аналитическое решение
+    if func == f1:
+        roots = analytical_solution_f1(params)
+        if roots:
+            print(f"Аналитическое решение: x1 = {roots[0]:.5f}, x2 = {roots[1]:.5f}")
+    elif func == f2:
+        root = analytical_solution_f2(params)
+        if root is not None:
+            print(f"Аналитическое решение для f2: x = {root:.5f}")
 
 
 # Параметры функций
